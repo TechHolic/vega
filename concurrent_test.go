@@ -23,7 +23,7 @@ const (
 var n = 1000000
 
 func demoFunc() error {
-	n := 10
+	n := 100
 	time.Sleep(time.Duration(n) * time.Millisecond)
 	return nil
 }
@@ -41,6 +41,24 @@ func TestCachedPool(t *testing.T) {
 	}
 	wg.Wait()
 	t.Logf("going workers number:%d", cachedRoutinePool.GetGoing())
+	mem := runtime.MemStats{}
+	runtime.ReadMemStats(&mem)
+	t.Logf("memory usage:%d MB", mem.TotalAlloc/MiB)
+}
+
+func TestFixPool(t *testing.T) {
+	var wg sync.WaitGroup
+	fixRoutinePool := concurrent.FixRoutinePool(int32(200000))
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		fixRoutinePool.Submit(func() error {
+			demoFunc()
+			wg.Done()
+			return nil
+		})
+	}
+	wg.Wait()
+	t.Logf("going workers number:%d", fixRoutinePool.GetGoing())
 	mem := runtime.MemStats{}
 	runtime.ReadMemStats(&mem)
 	t.Logf("memory usage:%d MB", mem.TotalAlloc/MiB)
